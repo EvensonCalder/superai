@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多模型加强查询</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -11,13 +13,12 @@
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: #000;
-            color: #fff;
+            font-family: Arial, sans-serif;
+            background-color: #fff;
+            color: #000;
             height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
         }
         
         .container {
@@ -25,358 +26,208 @@
             flex-direction: column;
             height: 100vh;
             padding: 20px;
-            gap: 20px;
         }
         
-        .result-section {
+        .result-container {
             flex: 3;
-            background-color: #111;
-            border-radius: 8px;
+            border: 1px solid #000;
             padding: 20px;
             overflow-y: auto;
             position: relative;
+            margin-bottom: 20px;
         }
         
-        .status-section {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .status-circle {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background-color: #fff;
-            transition: background-color 0.3s ease;
-        }
-        
-        .status-circle.active {
-            background-color: #3498db;
-        }
-        
-        .status-circle.completed {
-            background-color: #2ecc71;
-        }
-        
-        .input-section {
-            flex: 2;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        
-        .input-container {
-            display: flex;
-            gap: 10px;
-        }
-        
-        #user-input {
-            flex: 1;
-            background-color: #111;
-            border: 1px solid #333;
-            color: #fff;
-            padding: 12px;
-            border-radius: 4px;
-            font-size: 16px;
-        }
-        
-        .button {
-            background-color: #333;
-            color: #fff;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s ease;
-        }
-        
-        .button:hover {
-            background-color: #555;
+        .result-content {
+            height: 100%;
         }
         
         .copy-button {
             position: absolute;
             top: 10px;
             right: 10px;
-            background-color: #333;
+            background-color: #000;
             color: #fff;
             border: none;
-            padding: 8px 12px;
-            border-radius: 4px;
+            padding: 5px 10px;
             cursor: pointer;
             display: none;
-            z-index: 10;
         }
         
-        .result-section:hover .copy-button {
+        .result-container:hover .copy-button {
             display: block;
         }
         
-        /* Markdown样式 */
-        .markdown-content h1, .markdown-content h2, .markdown-content h3, 
-        .markdown-content h4, .markdown-content h5, .markdown-content h6 {
-            margin-top: 20px;
+        .status-container {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .status-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid #000;
+            background-color: #fff;
+            transition: background-color 0.3s ease;
+        }
+        
+        .status-circle.active {
+            background-color: #0000ff;
+        }
+        
+        .status-circle.completed {
+            background-color: #00ff00;
+        }
+        
+        .input-container {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .input-wrapper {
+            display: flex;
+            flex: 1;
+        }
+        
+        .input-field {
+            flex: 1;
+            border: 1px solid #000;
+            padding: 10px;
+            font-size: 16px;
+            resize: none;
+            transition: border-color 0.3s ease;
+        }
+        
+        .input-field.error {
+            border-color: #ff0000;
+        }
+        
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            margin-left: 10px;
+        }
+        
+        .action-button {
+            background-color: #000;
+            color: #fff;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
             margin-bottom: 10px;
-            font-weight: bold;
+            transition: background-color 0.3s ease;
         }
         
-        .markdown-content p {
-            margin-bottom: 16px;
-            line-height: 1.6;
+        .action-button:hover {
+            background-color: #333;
         }
         
-        .markdown-content code {
-            background-color: #222;
-            padding: 2px 4px;
-            border-radius: 3px;
-            font-family: monospace;
+        .action-button:last-child {
+            margin-bottom: 0;
         }
         
-        .markdown-content pre {
-            background-color: #222;
-            padding: 16px;
-            border-radius: 4px;
-            overflow-x: auto;
-            margin-bottom: 16px;
-        }
-        
-        .markdown-content pre code {
-            background-color: transparent;
-            padding: 0;
-        }
-        
-        .markdown-content ul, .markdown-content ol {
-            margin-bottom: 16px;
-            padding-left: 30px;
-        }
-        
-        .markdown-content li {
-            margin-bottom: 8px;
-        }
-        
-        .markdown-content blockquote {
-            border-left: 4px solid #555;
-            padding-left: 16px;
-            margin-bottom: 16px;
-            color: #ccc;
-        }
-        
-        .markdown-content table {
-            border-collapse: collapse;
-            width: 100%;
-            margin-bottom: 16px;
-        }
-        
-        .markdown-content th, .markdown-content td {
-            border: 1px solid #444;
-            padding: 8px 12px;
-            text-align: left;
-        }
-        
-        .markdown-content th {
-            background-color: #222;
-        }
-        
-        .markdown-content a {
-            color: #3498db;
-            text-decoration: none;
-        }
-        
-        .markdown-content a:hover {
-            text-decoration: underline;
-        }
-        
-        /* 响应式设计 */
         @media (max-width: 768px) {
             .container {
                 padding: 10px;
-                gap: 10px;
             }
             
             .status-circle {
-                width: 30px;
-                height: 30px;
+                width: 25px;
+                height: 25px;
             }
             
-            .status-section {
-                gap: 8px;
+            .input-container {
+                flex-direction: column;
             }
             
-            .button {
-                padding: 10px 15px;
-                font-size: 14px;
+            .input-wrapper {
+                flex-direction: column;
+            }
+            
+            .button-container {
+                flex-direction: row;
+                margin-left: 0;
+                margin-top: 10px;
+                justify-content: space-between;
+            }
+            
+            .action-button {
+                margin-bottom: 0;
+                margin-right: 0;
+                flex: 1;
+            }
+            
+            .action-button:not(:last-child) {
+                margin-right: 10px;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="result-section" id="result-section">
-            <button class="copy-button" id="copy-button">复制</button>
-            <div class="markdown-content" id="markdown-content"></div>
+        <div class="result-container">
+            <div class="result-content" id="result"></div>
+            <button class="copy-button" id="copyButton">复制</button>
         </div>
         
-        <div class="status-section" id="status-section">
-            <div class="status-circle" id="status-1"></div>
-            <div class="status-circle" id="status-2"></div>
-            <div class="status-circle" id="status-3"></div>
-            <div class="status-circle" id="status-4"></div>
-            <div class="status-circle" id="status-5"></div>
-            <div class="status-circle" id="status-6"></div>
-            <div class="status-circle" id="status-7"></div>
-            <div class="status-circle" id="status-8"></div>
+        <div class="status-container" id="statusContainer">
+            <!-- 10个状态圆圈将通过JavaScript动态生成 -->
         </div>
         
-        <div class="input-section">
-            <div class="input-container">
-                <input type="text" id="user-input" placeholder="请输入">
-                <button class="button" id="clear-button">清空</button>
-                <button class="button" id="download-button">下载</button>
-                <button class="button" id="send-button">发送</button>
+        <div class="input-container">
+            <div class="input-wrapper">
+                <textarea class="input-field" id="inputField" placeholder="请输入"></textarea>
+                <div class="button-container">
+                    <button class="action-button" id="clearButton">清空</button>
+                    <button class="action-button" id="downloadButton">下载</button>
+                    <button class="action-button" id="sendButton">发送</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    
     <script>
-        // 获取DOM元素
-        const resultSection = document.getElementById('result-section');
-        const markdownContent = document.getElementById('markdown-content');
-        const copyButton = document.getElementById('copy-button');
-        const userInput = document.getElementById('user-input');
-        const clearButton = document.getElementById('clear-button');
-        const downloadButton = document.getElementById('download-button');
-        const sendButton = document.getElementById('send-button');
-        
-        // 状态圆圈
-        const statusCircles = [];
-        for (let i = 1; i <= 8; i++) {
-            statusCircles.push(document.getElementById(`status-${i}`));
+        // 初始化状态圆圈
+        function initStatusCircles() {
+            const statusContainer = document.getElementById('statusContainer');
+            for (let i = 0; i < 10; i++) {
+                const circle = document.createElement('div');
+                circle.className = 'status-circle';
+                circle.id = `status-${i}`;
+                statusContainer.appendChild(circle);
+            }
         }
-        
-        // 存储查询结果
-        let queryResults = [];
-        let bestAnswerIndex = -1;
-        
-        // 复制按钮功能
-        copyButton.addEventListener('click', () => {
-            if (bestAnswerIndex >= 0 && queryResults[bestAnswerIndex]) {
-                navigator.clipboard.writeText(queryResults[bestAnswerIndex])
-                    .then(() => {
-                        const originalText = copyButton.textContent;
-                        copyButton.textContent = '已复制';
-                        setTimeout(() => {
-                            copyButton.textContent = originalText;
-                        }, 2000);
-                    })
-                    .catch(err => {
-                        console.error('复制失败:', err);
-                    });
-            }
-        });
-        
-        // 清空按钮功能
-        clearButton.addEventListener('click', () => {
-            userInput.value = '';
-            markdownContent.innerHTML = '';
-            queryResults = [];
-            bestAnswerIndex = -1;
-            
-            // 重置所有状态圆圈
-            statusCircles.forEach(circle => {
-                circle.classList.remove('active', 'completed');
-            });
-        });
-        
-        // 下载按钮功能
-        downloadButton.addEventListener('click', () => {
-            if (bestAnswerIndex >= 0 && queryResults[bestAnswerIndex]) {
-                const content = queryResults[bestAnswerIndex];
-                const blob = new Blob([content], { type: 'text/markdown' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `${Date.now()}.md`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }
-        });
-        
-        // 发送按钮功能
-        sendButton.addEventListener('click', async () => {
-            const userQuestion = userInput.value.trim();
-            if (!userQuestion) {
-                return;
-            }
-            
-            // 清空之前的结果
-            markdownContent.innerHTML = '';
-            queryResults = new Array(8).fill('');
-            bestAnswerIndex = -1;
-            
-            // 重置所有状态圆圈
-            statusCircles.forEach(circle => {
-                circle.classList.remove('active', 'completed');
-            });
-            
-            // 模型配置
-            const modelConfigs = [
-                { model: 'qwen3-think-search', temperature: 0.3 },
-                { model: 'qwen3-think-search', temperature: 0.7 },
-                { model: 'qwen3-think', temperature: 0 },
-                { model: 'qwen3-think', temperature: 0.3 },
-                { model: 'qwen3-nothink-search', temperature: 0.3 },
-                { model: 'qwen3-nothink-search', temperature: 0.7 },
-                { model: 'qwen3-nothink', temperature: 0 },
-                { model: 'qwen3-nothink', temperature: 0.3 }
-            ];
-            
-            // 发送8个请求，每个间隔1秒
-            const promises = modelConfigs.map((config, index) => {
-                return new Promise((resolve) => {
-                    setTimeout(() => {
-                        sendQuery(userQuestion, config.model, config.temperature, index)
-                            .then(resolve);
-                    }, index * 1000);
-                });
-            });
-            
-            // 等待所有请求完成
-            await Promise.all(promises);
-            
-            // 发送评价请求
-            sendEvaluationRequest(userQuestion);
-        });
-        
-        // 发送查询请求
-        async function sendQuery(question, model, temperature, index) {
-            // 设置状态圆圈为活跃
-            statusCircles[index].classList.add('active');
-            
-            const requestData = {
-                messages: [
-                    {
-                        content: "Respond in markdown.",
-                        role: "system"
-                    },
-                    {
-                        content: question,
-                        role: "user"
-                    }
-                ],
-                model: model,
-                stream: true,
-                temperature: temperature,
-                top_p: 0.9
-            };
-            
+
+        // 模型配置
+        const modelConfigs = [
+            { model: 'qwen3-think', temperature: 0.5 },
+            { model: 'qwen3-think', temperature: 0.3 },
+            { model: 'qwen3-think', temperature: 0.1 },
+            { model: 'qwen3-think', temperature: 0 },
+            { model: 'qwen3-max-preview', temperature: 0.7 },
+            { model: 'qwen3-nothink-search', temperature: 0.3 },
+            { model: 'qwen3-nothink-search', temperature: 0.7 },
+            { model: 'qwen3-coder', temperature: 0 },
+            { model: 'qwen3-nothink', temperature: 0.3 },
+            { model: 'qwen3-nothink', temperature: 0.5 }
+        ];
+
+        // 存储所有请求的结果
+        let results = [];
+        let originalInput = '';
+        // 存储当前显示的原始Markdown字符串
+        let currentMarkdown = '';
+
+        // 发送请求
+        async function sendRequest(index, content) {
+            const config = modelConfigs[index];
+            const statusCircle = document.getElementById(`status-${index}`);
+            statusCircle.classList.add('active');
+
             try {
                 const response = await fetch('https://gqtlstll.ap-northeast-1.clawcloudrun.com/v1/chat/completions', {
                     method: 'POST',
@@ -384,22 +235,38 @@
                         'Authorization': 'Bearer sk-DYTJTO2umSLWzotPnU9vGOsWKPnE6SBM52ZOOLpDM6hqyOMq',
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(requestData)
+                    body: JSON.stringify({
+                        messages: [
+                            {
+                                content: "Respond in markdown.",
+                                role: "system"
+                            },
+                            {
+                                content: content,
+                                role: "user"
+                            }
+                        ],
+                        model: config.model,
+                        stream: true,
+                        temperature: config.temperature,
+                        top_p: 0.9
+                    })
                 });
-                
+
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                
+
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
                 let result = '';
-                
-                while (true) {
+                let isCompleted = false;
+
+                while (!isCompleted) {
                     const { done, value } = await reader.read();
                     if (done) break;
-                    
-                    const chunk = decoder.decode(value);
+
+                    const chunk = decoder.decode(value, { stream: true });
                     const lines = chunk.split('\n');
                     
                     for (const line of lines) {
@@ -408,19 +275,19 @@
                             if (data === '[DONE]') continue;
                             
                             try {
-                                const json = JSON.parse(data);
-                                const content = json.choices[0].delta.content;
-                                if (content) {
-                                    result += content;
-                                }
-                                
-                                const finishReason = json.choices[0].finish_reason;
-                                if (finishReason && finishReason !== 'null') {
-                                    // 请求完成，设置状态圆圈为完成
-                                    statusCircles[index].classList.remove('active');
-                                    statusCircles[index].classList.add('completed');
-                                    queryResults[index] = result;
-                                    break;
+                                const parsed = JSON.parse(data);
+                                if (parsed.choices && parsed.choices[0]) {
+                                    if (parsed.choices[0].delta && parsed.choices[0].delta.content) {
+                                        result += parsed.choices[0].delta.content;
+                                    }
+                                    
+                                    if (parsed.choices[0].finish_reason && parsed.choices[0].finish_reason !== null) {
+                                        isCompleted = true;
+                                        statusCircle.classList.remove('active');
+                                        statusCircle.classList.add('completed');
+                                        results[index] = result;
+                                        checkAllCompleted();
+                                    }
                                 }
                             } catch (e) {
                                 console.error('Error parsing JSON:', e);
@@ -429,20 +296,29 @@
                     }
                 }
             } catch (error) {
-                console.error('Error sending query:', error);
-                // 请求失败，重置状态圆圈
-                statusCircles[index].classList.remove('active');
+                console.error('Request failed:', error);
+                statusCircle.classList.remove('active');
+                statusCircle.classList.add('completed');
+                results[index] = `请求失败: ${error.message}`;
+                checkAllCompleted();
             }
         }
-        
-        // 发送评价请求
-        async function sendEvaluationRequest(question) {
-            // 构建查询字符串
-            let queryStr = `用户的问题是：${question}\n`;
-            for (let i = 0; i < 8; i++) {
-                queryStr += `第 ${i + 1} 个回答：${queryResults[i]}\n`;
+
+        // 检查所有请求是否完成
+        function checkAllCompleted() {
+            if (results.every(result => result !== undefined)) {
+                // 所有请求完成，发送评价请求
+                sendEvaluationRequest();
             }
-            
+        }
+
+        // 发送评价请求
+        async function sendEvaluationRequest() {
+            let query = `用户的需求是：${originalInput}\n`;
+            for (let i = 0; i < 10; i++) {
+                query += `第 ${i} 个回答：${results[i]}\n`;
+            }
+
             try {
                 const response = await fetch('https://n8n-ujyltfyn.ap-northeast-1.clawcloudrun.com/webhook/judge', {
                     method: 'POST',
@@ -450,29 +326,125 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        query: queryStr
+                        original: originalInput,
+                        query: query
                     })
                 });
-                
+
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
+
+                const data = await response.json();
+                const bestAnswerIndex = parseInt(data.answerid);
                 
-                const result = await response.json();
-                bestAnswerIndex = parseInt(result.answerid) - 1; // 转换为0-based索引
+                // 保存原始Markdown字符串
+                currentMarkdown = results[bestAnswerIndex];
                 
-                // 显示最佳答案
-                if (bestAnswerIndex >= 0 && bestAnswerIndex < 8 && queryResults[bestAnswerIndex]) {
-                    markdownContent.innerHTML = marked.parse(queryResults[bestAnswerIndex]);
-                }
+                // 显示最佳答案（渲染后的HTML）
+                const resultElement = document.getElementById('result');
+                resultElement.innerHTML = marked.parse(currentMarkdown);
             } catch (error) {
-                console.error('Error sending evaluation request:', error);
-                // 如果评价请求失败，显示第一个答案
-                if (queryResults[0]) {
-                    markdownContent.innerHTML = marked.parse(queryResults[0]);
-                }
+                console.error('Evaluation request failed:', error);
+                const resultElement = document.getElementById('result');
+                resultElement.innerHTML = `评价请求失败: ${error.message}`;
+                // 保存错误信息作为Markdown
+                currentMarkdown = `评价请求失败: ${error.message}`;
             }
         }
+
+        // 复制结果
+        function copyResult() {
+            // 使用原始的Markdown字符串而不是渲染后的HTML文本
+            if (!currentMarkdown) {
+                console.error('没有可复制的内容');
+                return;
+            }
+            
+            navigator.clipboard.writeText(currentMarkdown).then(() => {
+                const copyButton = document.getElementById('copyButton');
+                const originalText = copyButton.textContent;
+                copyButton.textContent = '已复制';
+                setTimeout(() => {
+                    copyButton.textContent = originalText;
+                }, 2000);
+            }).catch(err => {
+                console.error('复制失败:', err);
+            });
+        }
+
+        // 下载结果
+        function downloadResult() {
+            // 使用原始的Markdown字符串而不是渲染后的HTML文本
+            if (!currentMarkdown) {
+                console.error('没有可下载的内容');
+                return;
+            }
+            
+            const blob = new Blob([currentMarkdown], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${Date.now()}.md`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // 清空查询
+        function clearQuery() {
+            document.getElementById('inputField').value = '';
+            document.getElementById('result').innerHTML = '';
+            results = [];
+            currentMarkdown = ''; // 清空保存的Markdown字符串
+            
+            // 重置状态圆圈
+            for (let i = 0; i < 10; i++) {
+                const statusCircle = document.getElementById(`status-${i}`);
+                statusCircle.classList.remove('active', 'completed');
+            }
+        }
+
+        // 发送查询
+        function sendQuery() {
+            const input = document.getElementById('inputField').value.trim();
+            if (!input) {
+                const inputField = document.getElementById('inputField');
+                inputField.classList.add('error');
+                setTimeout(() => {
+                    inputField.classList.remove('error');
+                }, 2000);
+                return;
+            }
+
+            originalInput = input;
+            results = new Array(10).fill(undefined);
+            currentMarkdown = ''; // 重置保存的Markdown字符串
+            
+            // 重置状态圆圈
+            for (let i = 0; i < 10; i++) {
+                const statusCircle = document.getElementById(`status-${i}`);
+                statusCircle.classList.remove('active', 'completed');
+            }
+
+            // 每隔1秒发送一个请求
+            for (let i = 0; i < 10; i++) {
+                setTimeout(() => {
+                    sendRequest(i, input);
+                }, i * 1000);
+            }
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            initStatusCircles();
+            
+            document.getElementById('copyButton').addEventListener('click', copyResult);
+            document.getElementById('downloadButton').addEventListener('click', downloadResult);
+            document.getElementById('clearButton').addEventListener('click', clearQuery);
+            document.getElementById('sendButton').addEventListener('click', sendQuery);
+        });
     </script>
 </body>
 </html>
