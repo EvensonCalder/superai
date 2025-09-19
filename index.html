@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>多模型加强查询</title>
+    <title>SuperAI</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <style>
         * {
             margin: 0;
@@ -191,6 +193,35 @@
     </div>
 
     <script>
+        // 配置MathJax
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                ready: () => {
+                    console.log('MathJax已加载并初始化');
+                    MathJax.startup.defaultReady();
+                    // 通知应用程序MathJax已准备就绪
+                    window.mathJaxReady = true;
+                    if (window.onMathJaxReady) {
+                        window.onMathJaxReady();
+                    }
+                }
+            }
+        };
+        
+        // 配置marked库
+        marked.setOptions({
+            breaks: true,
+            gfm: true,
+            headerIds: true,
+            headerPrefix: '',
+            // 不解码HTML实体，保持数学公式标记的原始性
+            decodeEntities: false 
+        });
+
         // 初始化状态圆圈
         function initStatusCircles() {
             const statusContainer = document.getElementById('statusContainer');
@@ -344,6 +375,11 @@
                 // 显示最佳答案（渲染后的HTML）
                 const resultElement = document.getElementById('result');
                 resultElement.innerHTML = marked.parse(currentMarkdown);
+                
+                // 如果MathJax已准备就绪，重新渲染页面上的数学公式
+                if (window.mathJaxReady && window.MathJax) {
+                    MathJax.typesetPromise([resultElement]).catch((err) => console.log(err.message));
+                }
             } catch (error) {
                 console.error('Evaluation request failed:', error);
                 const resultElement = document.getElementById('result');
@@ -438,13 +474,31 @@
 
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
+            // 检查MathJax是否已准备就绪
+            if (window.mathJaxReady) {
+                initApp();
+            } else {
+                window.onMathJaxReady = initApp;
+                
+                // 设置超时，确保即使MathJax加载失败，应用程序也能正常工作
+                setTimeout(() => {
+                    if (!window.mathJaxReady) {
+                        console.warn('MathJax在超时期限内未能加载');
+                        initApp();
+                    }
+                }, 5000); // 5秒超时
+            }
+        });
+        
+        // 初始化应用程序
+        function initApp() {
             initStatusCircles();
             
             document.getElementById('copyButton').addEventListener('click', copyResult);
             document.getElementById('downloadButton').addEventListener('click', downloadResult);
             document.getElementById('clearButton').addEventListener('click', clearQuery);
             document.getElementById('sendButton').addEventListener('click', sendQuery);
-        });
+        }
     </script>
 </body>
 </html>
